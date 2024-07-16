@@ -1,106 +1,197 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import '../data/database.dart';
-import '../util/dialog_box.dart';
-import '../util/todo_tile.dart';
+import 'package:provider/provider.dart';
+import 'package:todo_app/data/database.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
-}
+  Widget build(BuildContext context) {
+    final toDoDataBase = Provider.of<ToDoDataBase>(context);
 
-class _HomePageState extends State<HomePage> {
-  // reference the hive box
-  final _myBox = Hive.box('mybox');
-  ToDoDataBase db = ToDoDataBase();
-
-  @override
-  void initState() {
-    // if this is the 1st time ever openin the app, then create default data
-    if (_myBox.get("TODOLIST") == null) {
-      db.createInitialData();
-    } else {
-      // there already exists data
-      db.loadData();
-    }
-    super.initState();
+    return Scaffold(
+      backgroundColor: Colors.blue.shade900,
+      appBar: AppBar(
+        backgroundColor: Colors.blue.shade800,
+        foregroundColor: Colors.white,
+        title: const Text(
+          'TO DO App',
+          style: TextStyle(fontSize: 25),
+        ),
+        elevation: 15,
+      ),
+      body: ListView.builder(
+        itemCount: toDoDataBase.toDoList.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Container(
+              color: Colors.blue.shade600,
+              child: ListTile(
+                title: Text(
+                  toDoDataBase.toDoList[index][0],
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      decoration: toDoDataBase.toDoList[index][1]
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                  ),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.edit,
+                        color: Colors.white,
+                      ),
+                      onPressed: () => _editTaskDialog(context, index),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete,
+                        color: Colors.white,
+                      ),
+                      onPressed: () => toDoDataBase.deleteTask(index),
+                    ),
+                    Checkbox(
+                      activeColor: Colors.blue,
+                      value: toDoDataBase.toDoList[index][1],
+                      onChanged: (value) {
+                        toDoDataBase.toggleTaskCompletion(index);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _addTaskDialog(context),
+        child: const Icon(Icons.add),
+      ),
+    );
   }
 
-  // text controller
-  final _controller = TextEditingController();
+  void _addTaskDialog(BuildContext context) {
+    final toDoDataBase = Provider.of<ToDoDataBase>(context, listen: false);
+    final TextEditingController controller = TextEditingController();
 
-  // checkbox was tapped
-  void checkBoxChanged(bool? value, int index) {
-    setState(() {
-      db.toDoList[index][1] = !db.toDoList[index][1];
-    });
-    db.updateDataBase();
-  }
-
-  // save new task
-  void saveNewTask() {
-    setState(() {
-      db.toDoList.add([_controller.text, false]);
-      _controller.clear();
-    });
-    Navigator.of(context).pop();
-    db.updateDataBase();
-  }
-  void cancelSaveTask(){
-    Navigator.of(context).pop();
-    _controller.clear();
-  }
-
-  // create a new task
-  void createNewTask() {
     showDialog(
       context: context,
       builder: (context) {
-        return DialogBox(
-          controller: _controller,
-          onSave: saveNewTask,
-          onCancel: cancelSaveTask,
+        return AlertDialog(
+          backgroundColor: Colors.blue,
+          title: const Text(
+            'Add Task',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: TextField(
+            style: const TextStyle(color: Colors.white),
+            controller: controller,
+            decoration: const InputDecoration(
+                hintStyle: TextStyle(color: Colors.white),
+                hintText: 'Task Name'),
+          ),
+          actions: [
+            // buttons -> save + cancel
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // cancel button
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    controller.clear();
+                  },
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // save button
+                TextButton(
+                  onPressed: () {
+                    toDoDataBase.addTask(controller.text);
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'Add',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ],
         );
       },
     );
   }
 
-  // delete task
-  void deleteTask(int index) {
-    setState(() {
-      db.toDoList.removeAt(index);
-    });
-    db.updateDataBase();
-  }
+  void _editTaskDialog(BuildContext context, int index) {
+    final toDoDataBase = Provider.of<ToDoDataBase>(context, listen: false);
+    final TextEditingController controller = TextEditingController(
+      text: toDoDataBase.toDoList[index][0],
+    );
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF00355F),
-      appBar: AppBar(
-        backgroundColor: Colors.blue.shade900,
-        foregroundColor: Colors.white,
-        title: const Text('TO DO',style: TextStyle(fontSize: 25),),
-        elevation: 15,
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.white,
-        onPressed: createNewTask,
-        child: Icon(Icons.add),
-      ),
-      body: ListView.builder(
-        itemCount: db.toDoList.length,
-        itemBuilder: (context, index) {
-          return ToDoTile(
-            taskName: db.toDoList[index][0],
-            taskCompleted: db.toDoList[index][1],
-            onChanged: (value) => checkBoxChanged(value, index),
-            deleteFunction: (context) => deleteTask(index),
-          );
-        },
-      ),
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.blue,
+          title: const Text(
+            'Edit Task',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: TextField(
+            style: const TextStyle(color: Colors.white),
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: 'Task Name',
+              hintStyle: TextStyle(color: Colors.white),
+            ),
+          ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // cancel button
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    controller.clear();
+                  },
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // save button
+                TextButton(
+                  onPressed: () {
+                    toDoDataBase.editTask(index, controller.text);
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'Save',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }
