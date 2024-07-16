@@ -18,14 +18,13 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    // // if this is the 1st time ever openin the app, then create default data
-    // if (_myBox.get("TODOLIST") == null) {
-    //   db.createInitialData();
-    // } else {
-    //   // there already exists data
-    //   db.loadData();
-    // }
-    db.loadData();
+    // if this is the 1st time ever openin the app, then create default data
+    if (_myBox.get("TODOLIST") == null) {
+      db.createInitialData();
+    } else {
+      // there already exists data
+      db.loadData();
+    }
     super.initState();
   }
 
@@ -49,6 +48,10 @@ class _HomePageState extends State<HomePage> {
     Navigator.of(context).pop();
     db.updateDataBase();
   }
+  void cancelSaveTask(){
+    Navigator.of(context).pop();
+    _controller.clear();
+  }
 
   // create a new task
   void createNewTask() {
@@ -58,7 +61,7 @@ class _HomePageState extends State<HomePage> {
         return DialogBox(
           controller: _controller,
           onSave: saveNewTask,
-          onCancel: () => Navigator.of(context).pop(),
+          onCancel: cancelSaveTask,
         );
       },
     );
@@ -75,14 +78,15 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF00355F),
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.blue.shade900,
         foregroundColor: Colors.white,
-        title: Text('TO DO'),
-        elevation: 0,
+        title: const Text('TO DO',style: TextStyle(fontSize: 25),),
+        elevation: 15,
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.white,
         onPressed: createNewTask,
         child: Icon(Icons.add),
       ),

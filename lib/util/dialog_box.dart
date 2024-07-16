@@ -17,7 +17,7 @@ class DialogBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: Colors.grey[300],
+      backgroundColor: Colors.blue.shade900,
       content: Container(
         height: 120,
         child: Column(
@@ -26,7 +26,9 @@ class DialogBox extends StatelessWidget {
             // get user input
             TextField(
               controller: controller,
+              style: TextStyle(fontSize: 22.0, color: Colors.grey.shade300),
               decoration: InputDecoration(
+                hintStyle: TextStyle(color: Colors.grey.shade300),
                 border: OutlineInputBorder(),
                 hintText: "Add a new task",
               ),
